@@ -1,9 +1,11 @@
 """Entry point for the IT Evidence Collector desktop app."""
 
+from src.ui import run_app
+
 
 def main() -> None:
-    """Run the application."""
-    print("IT Evidence Collector is ready.")
+    """Run the desktop application."""
+    run_app()
 
 
 if __name__ == "__main__":
