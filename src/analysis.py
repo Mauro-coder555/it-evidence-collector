@@ -92,13 +92,7 @@ def _build_resource_checks(evidence: dict[str, Any]) -> list[dict[str, str]]:
         cpu_status = "ok"
         cpu_detail = f"{cpu_usage}% usage."
 
-    checks.append(
-        {
-            "area": "cpu",
-            "status": cpu_status,
-            "detail": cpu_detail,
-        }
-    )
+    checks.append({"area": "cpu", "status": cpu_status, "detail": cpu_detail})
 
     memory_usage = _as_float(memory.get("usage_percent"))
     if memory_usage >= 90:
@@ -114,13 +108,7 @@ def _build_resource_checks(evidence: dict[str, Any]) -> list[dict[str, str]]:
         memory_status = "ok"
         memory_detail = f"{memory_usage}% used."
 
-    checks.append(
-        {
-            "area": "memory",
-            "status": memory_status,
-            "detail": memory_detail,
-        }
-    )
+    checks.append({"area": "memory", "status": memory_status, "detail": memory_detail})
 
     if not disks:
         checks.append(
@@ -139,38 +127,17 @@ def _build_resource_checks(evidence: dict[str, Any]) -> list[dict[str, str]]:
         if disk.get("error"):
             status = "review"
             detail = f"{device}: disk data is incomplete: {disk.get('error')}"
-        elif usage_percent >= 90:
-            status = "warning"
-            detail = (
-                f"{device}: {usage_percent}% used, "
-                f"{disk.get('free', 'not available')} free."
-            )
         elif usage_percent >= 80:
             status = "warning"
-            detail = (
-                f"{device}: {usage_percent}% used, "
-                f"{disk.get('free', 'not available')} free."
-            )
+            detail = f"{device}: {usage_percent}% used, {disk.get('free', 'not available')} free."
         elif usage_percent >= 70:
             status = "review"
-            detail = (
-                f"{device}: {usage_percent}% used, "
-                f"{disk.get('free', 'not available')} free."
-            )
+            detail = f"{device}: {usage_percent}% used, {disk.get('free', 'not available')} free."
         else:
             status = "ok"
-            detail = (
-                f"{device}: {usage_percent}% used, "
-                f"{disk.get('free', 'not available')} free."
-            )
+            detail = f"{device}: {usage_percent}% used, {disk.get('free', 'not available')} free."
 
-        checks.append(
-            {
-                "area": "disk",
-                "status": status,
-                "detail": detail,
-            }
-        )
+        checks.append({"area": "disk", "status": status, "detail": detail})
 
     return checks
 
@@ -192,13 +159,7 @@ def _build_process_checks(evidence: dict[str, Any]) -> list[dict[str, str]]:
         status = "ok"
         detail = f"{total_processes} active processes."
 
-    checks.append(
-        {
-            "area": "processes",
-            "status": status,
-            "detail": detail,
-        }
-    )
+    checks.append({"area": "processes", "status": status, "detail": detail})
 
     top_memory = processes.get("top_by_memory", [])
     if top_memory:
@@ -275,17 +236,10 @@ def _build_network_checks(evidence: dict[str, Any]) -> list[dict[str, str]]:
         )
 
     total_listening = _as_int(listening_ports.get("total_listening_connections"))
-    if total_listening >= 50:
-        status = "review"
-    elif total_listening >= 25:
-        status = "review"
-    else:
-        status = "ok"
-
     checks.append(
         {
             "area": "listening_ports",
-            "status": status,
+            "status": "review" if total_listening >= 25 else "ok",
             "detail": f"{total_listening} listening ports found.",
         }
     )
@@ -385,6 +339,111 @@ def _build_service_checks(evidence: dict[str, Any]) -> list[dict[str, str]]:
     ]
 
 
+def _build_crash_checks(evidence: dict[str, Any]) -> list[dict[str, str]]:
+    """Build Windows crash diagnostics checks."""
+    crash = evidence.get("crash_diagnostics", {})
+
+    if not crash:
+        return [
+            {
+                "area": "crash_diagnostics",
+                "status": "review",
+                "detail": "Windows crash diagnostics were not collected.",
+            }
+        ]
+
+    if not crash.get("supported", False):
+        return [
+            {
+                "area": "crash_diagnostics",
+                "status": "review",
+                "detail": "Windows crash diagnostics are not supported on this OS.",
+            }
+        ]
+
+    checks: list[dict[str, str]] = []
+
+    bugchecks = crash.get("bugchecks", {})
+    bugcheck_count = _as_int(bugchecks.get("count"))
+    last_bugcheck_code = bugchecks.get("last_bugcheck_code", "not available")
+
+    if bugcheck_count > 0:
+        checks.append(
+            {
+                "area": "bugcheck",
+                "status": "warning",
+                "detail": (
+                    f"{bugcheck_count} BugCheck event(s) found in the last 30 days. "
+                    f"Last detected code: {last_bugcheck_code}."
+                ),
+            }
+        )
+    else:
+        checks.append(
+            {
+                "area": "bugcheck",
+                "status": "ok",
+                "detail": "No BugCheck events found in the last 30 days.",
+            }
+        )
+
+    kernel_power = crash.get("kernel_power", {})
+    kernel_power_count = _as_int(kernel_power.get("count"))
+    if kernel_power_count > 0:
+        checks.append(
+            {
+                "area": "kernel_power",
+                "status": "review",
+                "detail": f"{kernel_power_count} Kernel-Power event(s) found in the last 30 days.",
+            }
+        )
+
+    whea_errors = crash.get("whea_errors", {})
+    whea_count = _as_int(whea_errors.get("count"))
+    if whea_count > 0:
+        checks.append(
+            {
+                "area": "hardware_errors",
+                "status": "warning",
+                "detail": f"{whea_count} WHEA hardware error event(s) found in the last 30 days.",
+            }
+        )
+
+    display_errors = crash.get("display_errors", {})
+    display_count = _as_int(display_errors.get("count"))
+    if display_count > 0:
+        checks.append(
+            {
+                "area": "display_errors",
+                "status": "review",
+                "detail": f"{display_count} display driver related event(s) found in the last 30 days.",
+            }
+        )
+
+    minidumps = crash.get("minidumps", {})
+    minidump_count = _as_int(minidumps.get("count"))
+    if minidump_count > 0:
+        checks.append(
+            {
+                "area": "minidumps",
+                "status": "review",
+                "detail": f"{minidump_count} minidump file(s) found in {minidumps.get('directory')}.",
+            }
+        )
+
+    errors = crash.get("errors", [])
+    if errors:
+        checks.append(
+            {
+                "area": "crash_collection_errors",
+                "status": "review",
+                "detail": f"{len(errors)} crash diagnostics collection issue(s) reported.",
+            }
+        )
+
+    return checks
+
+
 def build_findings(checks: list[dict[str, str]]) -> list[str]:
     """Build human-readable findings from checks."""
     findings: list[str] = []
@@ -402,6 +461,44 @@ def build_findings(checks: list[dict[str, str]]) -> list[str]:
     return findings
 
 
+def build_recommendations(checks: list[dict[str, str]]) -> list[str]:
+    """Build suggested next steps from checks."""
+    recommendations: list[str] = []
+    areas = {check.get("area"): check for check in checks}
+
+    if "disk" in areas and areas["disk"].get("status") in {"review", "warning"}:
+        recommendations.append("Review disk usage and free up space if possible.")
+
+    if "memory" in areas and areas["memory"].get("status") in {"review", "warning"}:
+        recommendations.append("Review high memory usage and top memory-consuming processes.")
+
+    if "top_cpu_process" in areas and areas["top_cpu_process"].get("status") in {"review", "warning"}:
+        recommendations.append("Review the top CPU process and confirm whether it is expected.")
+
+    if "bugcheck" in areas and areas["bugcheck"].get("status") == "warning":
+        recommendations.append("Review recent BugCheck events and analyze available minidump files.")
+
+    if "kernel_power" in areas:
+        recommendations.append("Check whether the device had unexpected restarts or power interruptions.")
+
+    if "hardware_errors" in areas:
+        recommendations.append("Review WHEA hardware errors. Consider checking drivers, BIOS, memory, and hardware health.")
+
+    if "display_errors" in areas:
+        recommendations.append("Review display driver events and consider updating or rolling back graphics drivers.")
+
+    if "minidumps" in areas:
+        recommendations.append("Analyze minidump files with WinDbg or another approved internal tool.")
+
+    if "notable_port" in areas or "public_bindings" in areas:
+        recommendations.append("Review services listening on all interfaces and confirm they are expected.")
+
+    if not recommendations:
+        recommendations.append("No immediate action suggested by the basic checks.")
+
+    return recommendations
+
+
 def analyze_evidence(evidence: dict[str, Any]) -> dict[str, Any]:
     """Analyze collected evidence and return a support-friendly summary."""
     checks: list[dict[str, str]] = []
@@ -409,6 +506,7 @@ def analyze_evidence(evidence: dict[str, Any]) -> dict[str, Any]:
     checks.extend(_build_process_checks(evidence))
     checks.extend(_build_network_checks(evidence))
     checks.extend(_build_service_checks(evidence))
+    checks.extend(_build_crash_checks(evidence))
 
     overall_status = _worst_status([check.get("status", "ok") for check in checks])
 
@@ -416,4 +514,5 @@ def analyze_evidence(evidence: dict[str, Any]) -> dict[str, Any]:
         "overall_status": overall_status,
         "checks": checks,
         "findings": build_findings(checks),
+        "recommendations": build_recommendations(checks),
     }

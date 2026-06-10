@@ -23,6 +23,27 @@ def _safe_value(value: Any) -> str:
     return text
 
 
+def _format_bytes(value: int | float | None) -> str:
+    """Format a byte value using a human-readable unit."""
+    if value is None:
+        return "not available"
+
+    value_float = float(value)
+    units = ["B", "KB", "MB", "GB", "TB"]
+
+    for unit in units:
+        if value_float < 1024:
+            return f"{value_float:.2f} {unit}"
+        value_float /= 1024
+
+    return f"{value_float:.2f} PB"
+
+
+def _localized_label(language: str, english: str, spanish: str) -> str:
+    """Return a small localized label without requiring translation keys."""
+    return spanish if normalize_language(language) == "es" else english
+
+
 def _status_badge(status: Any) -> str:
     """Format a status value for Markdown."""
     normalized = str(status).lower().strip()
@@ -82,6 +103,20 @@ def _render_key_findings(analysis: dict[str, Any], language: str) -> str:
         return t(language, "report.no_findings")
 
     return "\n".join([f"- {_safe_value(finding)}" for finding in findings])
+
+
+def _render_recommendations(analysis: dict[str, Any], language: str) -> str:
+    """Render suggested next steps."""
+    recommendations = analysis.get("recommendations", [])
+
+    if not recommendations:
+        return _localized_label(
+            language,
+            "No immediate action suggested by the basic checks.",
+            "No se sugieren acciones inmediatas con los chequeos básicos.",
+        )
+
+    return "\n".join([f"- {_safe_value(recommendation)}" for recommendation in recommendations])
 
 
 def _render_process_table(processes: list[dict[str, Any]], language: str) -> str:
@@ -267,12 +302,7 @@ def _render_services(data: dict[str, Any], language: str) -> str:
     ]
 
     if error:
-        lines.extend(
-            [
-                f"{t(language, 'table.error')}: **{_safe_value(error)}**",
-                "",
-            ]
-        )
+        lines.extend([f"{t(language, 'table.error')}: **{_safe_value(error)}**", ""])
 
     lines.extend(
         [
@@ -311,6 +341,151 @@ def _render_services(data: dict[str, Any], language: str) -> str:
         )
 
     return "\n".join(lines)
+
+
+def _render_event_table(events: list[dict[str, Any]], language: str) -> str:
+    """Render Windows events as a Markdown table."""
+    if not events:
+        return _localized_label(
+            language,
+            "No events found.",
+            "No se encontraron eventos.",
+        )
+
+    lines = [
+        "| Time | Event ID | Provider | Level | Message |",
+        "|---|---:|---|---|---|",
+    ]
+
+    for event in events:
+        message = str(event.get("message", "not available"))
+        short_message = message.replace("\n", " ").strip()
+        if len(short_message) > 220:
+            short_message = short_message[:220] + "..."
+
+        lines.append(
+            "| "
+            f"{_safe_value(event.get('time_created'))} | "
+            f"{_safe_value(event.get('event_id'))} | "
+            f"{_safe_value(event.get('provider'))} | "
+            f"{_safe_value(event.get('level'))} | "
+            f"{_safe_value(short_message)} |"
+        )
+
+    return "\n".join(lines)
+
+
+def _render_minidumps(minidumps: dict[str, Any], language: str) -> str:
+    """Render Windows minidump metadata."""
+    files = minidumps.get("files", [])
+
+    lines = [
+        _render_key_value_table(
+            {
+                "directory": minidumps.get("directory"),
+                "exists": minidumps.get("exists"),
+                "count": minidumps.get("count"),
+                "error": minidumps.get("error", ""),
+            },
+            language,
+        ),
+        "",
+    ]
+
+    if not files:
+        lines.append(
+            _localized_label(
+                language,
+                "No minidump files found.",
+                "No se encontraron archivos minidump.",
+            )
+        )
+        return "\n".join(lines)
+
+    lines.extend(
+        [
+            "| File | Size | Path |",
+            "|---|---:|---|",
+        ]
+    )
+
+    for dump_file in files:
+        lines.append(
+            "| "
+            f"{_safe_value(dump_file.get('name'))} | "
+            f"{_format_bytes(dump_file.get('size_bytes'))} | "
+            f"{_safe_value(dump_file.get('path'))} |"
+        )
+
+    return "\n".join(lines)
+
+
+def _render_crash_diagnostics(crash: dict[str, Any], language: str) -> str:
+    """Render Windows crash diagnostics."""
+    if not crash:
+        return _localized_label(
+            language,
+            "Crash diagnostics were not collected.",
+            "No se recolectó diagnóstico de crashes.",
+        )
+
+    if not crash.get("supported", False):
+        return _localized_label(
+            language,
+            "Windows crash diagnostics are not available on this operating system.",
+            "El diagnóstico de crashes de Windows no está disponible en este sistema operativo.",
+        )
+
+    bugchecks = crash.get("bugchecks", {})
+    kernel_power = crash.get("kernel_power", {})
+    whea_errors = crash.get("whea_errors", {})
+    display_errors = crash.get("display_errors", {})
+    recent_critical_errors = crash.get("recent_critical_errors", {})
+    minidumps = crash.get("minidumps", {})
+
+    content = [
+        "### Summary",
+        "",
+        _render_key_value_table(
+            {
+                "bugcheck_events_last_30_days": bugchecks.get("count", 0),
+                "last_bugcheck_code": bugchecks.get("last_bugcheck_code", "not available"),
+                "kernel_power_events_last_30_days": kernel_power.get("count", 0),
+                "whea_events_last_30_days": whea_errors.get("count", 0),
+                "display_events_last_30_days": display_errors.get("count", 0),
+                "recent_critical_or_error_events_last_7_days": recent_critical_errors.get("count", 0),
+                "minidump_files": minidumps.get("count", 0),
+            },
+            language,
+        ),
+        "",
+        "### BugCheck Events",
+        "",
+        _render_event_table(bugchecks.get("events", []), language),
+        "",
+        "### Kernel-Power Events",
+        "",
+        _render_event_table(kernel_power.get("events", []), language),
+        "",
+        "### WHEA Hardware Events",
+        "",
+        _render_event_table(whea_errors.get("events", []), language),
+        "",
+        "### Display Driver Events",
+        "",
+        _render_event_table(display_errors.get("events", []), language),
+        "",
+        "### Minidump Files",
+        "",
+        _render_minidumps(minidumps, language),
+    ]
+
+    errors = crash.get("errors", [])
+    if errors:
+        content.extend(["", "### Collection Issues", ""])
+        content.extend([f"- {_safe_value(error)}" for error in errors])
+
+    return "\n".join(content)
 
 
 def _render_command_output(title: str, command_result: dict[str, Any], language: str) -> str:
@@ -352,7 +527,20 @@ def generate_markdown_report(evidence: dict[str, Any], language: str = "en") -> 
     processes = evidence.get("processes", {})
     network = evidence.get("network", {})
     services = evidence.get("services", {})
+    crash_diagnostics = evidence.get("crash_diagnostics", {})
     analysis = evidence.get("analysis", {})
+
+    crash_title = _localized_label(
+        language_code,
+        "Windows Crash Diagnostics",
+        "Diagnóstico de crashes de Windows",
+    )
+
+    recommendations_title = _localized_label(
+        language_code,
+        "Suggested Next Steps",
+        "Próximos pasos sugeridos",
+    )
 
     content = [
         f"# {t(language_code, 'report.title')}",
@@ -364,6 +552,14 @@ def generate_markdown_report(evidence: dict[str, Any], language: str = "en") -> 
         f"## {t(language_code, 'report.key_findings')}",
         "",
         _render_key_findings(analysis, language_code),
+        "",
+        f"## {recommendations_title}",
+        "",
+        _render_recommendations(analysis, language_code),
+        "",
+        f"## {crash_title}",
+        "",
+        _render_crash_diagnostics(crash_diagnostics, language_code),
         "",
         f"## {t(language_code, 'report.purpose')}",
         "",
