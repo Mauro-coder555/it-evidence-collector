@@ -2,11 +2,34 @@
 
 from __future__ import annotations
 
+import locale
 import socket
 import subprocess
 from typing import Any
 
 import psutil
+
+
+def _decode_windows_output(data: bytes) -> str:
+    """Decode Windows command output using safe fallbacks."""
+    encodings = [
+        "utf-8",
+        locale.getpreferredencoding(False),
+        "cp850",
+        "cp437",
+        "latin-1",
+    ]
+
+    for encoding in encodings:
+        if not encoding:
+            continue
+
+        try:
+            return data.decode(encoding)
+        except UnicodeDecodeError:
+            continue
+
+    return data.decode("utf-8", errors="replace")
 
 
 def _run_command(command: list[str], timeout: int = 20) -> dict[str, Any]:
@@ -15,18 +38,15 @@ def _run_command(command: list[str], timeout: int = 20) -> dict[str, Any]:
         result = subprocess.run(
             command,
             capture_output=True,
-            text=True,
             timeout=timeout,
             check=False,
-            encoding="utf-8",
-            errors="replace",
         )
 
         return {
             "command": " ".join(command),
             "return_code": result.returncode,
-            "stdout": result.stdout.strip() or "not available",
-            "stderr": result.stderr.strip() or "not available",
+            "stdout": _decode_windows_output(result.stdout).strip() or "not available",
+            "stderr": _decode_windows_output(result.stderr).strip() or "not available",
         }
     except FileNotFoundError:
         return {
@@ -96,7 +116,7 @@ def collect_interfaces() -> list[dict[str, Any]]:
 
 
 def collect_listening_ports(limit: int = 100) -> dict[str, Any]:
-    """Collect listening TCP and UDP ports."""
+    """Collect listening TCP ports."""
     connections: list[dict[str, Any]] = []
     errors: list[str] = []
 
@@ -115,6 +135,9 @@ def collect_listening_ports(limit: int = 100) -> dict[str, Any]:
 
     for connection in net_connections:
         try:
+            if connection.type != socket.SOCK_STREAM:
+                continue
+
             if connection.status != psutil.CONN_LISTEN:
                 continue
 
@@ -134,7 +157,7 @@ def collect_listening_ports(limit: int = 100) -> dict[str, Any]:
 
             connections.append(
                 {
-                    "protocol": "TCP" if connection.type == socket.SOCK_STREAM else "UDP",
+                    "protocol": "TCP",
                     "local_address": local_address,
                     "local_port": local_port,
                     "pid": connection.pid or "not available",
@@ -147,7 +170,10 @@ def collect_listening_ports(limit: int = 100) -> dict[str, Any]:
 
     connections = sorted(
         connections,
-        key=lambda item: str(item.get("local_port", "")),
+        key=lambda item: (
+            str(item.get("local_address", "")),
+            int(item.get("local_port", 0)) if str(item.get("local_port", "")).isdigit() else 0,
+        ),
     )
 
     return {

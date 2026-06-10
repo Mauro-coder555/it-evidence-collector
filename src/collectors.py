@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Callable
 
+from src.analysis import analyze_evidence
 from src.i18n import t
 from src.network import collect_network_info
 from src.processes import collect_processes
@@ -61,6 +62,17 @@ def collect_evidence(
     except Exception as exc:
         evidence["services"] = {"error": str(exc)}
         evidence["warnings"].append(f"{t(language, 'warning.services_failed')}: {exc}")
+
+    _notify(progress_callback, 90, t(language, "progress.analyzing"))
+    try:
+        evidence["analysis"] = analyze_evidence(evidence)
+    except Exception as exc:
+        evidence["analysis"] = {
+            "overall_status": "review",
+            "checks": [],
+            "findings": [f"{t(language, 'warning.analysis_failed')}: {exc}"],
+        }
+        evidence["warnings"].append(f"{t(language, 'warning.analysis_failed')}: {exc}")
 
     _notify(progress_callback, 95, t(language, "progress.finalizing"))
 

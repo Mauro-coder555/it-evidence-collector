@@ -45,6 +45,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "progress.processes": "Collecting process information...",
         "progress.network": "Collecting network information...",
         "progress.services": "Collecting Windows service information...",
+        "progress.analyzing": "Analyzing collected evidence...",
         "progress.finalizing": "Finalizing evidence collection...",
         "metadata.purpose": "Defensive IT support and diagnostic evidence collection",
         "metadata.safety_note": (
@@ -56,6 +57,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "warning.processes_failed": "Process collection failed",
         "warning.network_failed": "Network collection failed",
         "warning.services_failed": "Service collection failed",
+        "warning.analysis_failed": "Evidence analysis failed",
         "report.title": "IT Evidence Collector Report",
         "report.purpose": "Purpose",
         "report.purpose_text": (
@@ -66,6 +68,10 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "report.not_replacement": (
             "This tool does not replace an EDR, SIEM, antivirus, or formal forensic process."
         ),
+        "report.quick_status": "Quick Computer Status",
+        "report.overall_status": "Overall status",
+        "report.key_findings": "Key Findings",
+        "report.no_findings": "No immediate issues were detected by the basic checks.",
         "report.collection_summary": "Collection Summary",
         "report.resource_usage": "Resource Usage",
         "report.cpu": "CPU",
@@ -77,6 +83,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "report.top_by_cpu": "Top Processes by CPU",
         "report.process_errors": "Process Collection Errors",
         "report.no_process_errors": "No process collection errors reported.",
+        "report.network_summary": "Network Summary",
         "report.network_interfaces": "Network Interfaces",
         "report.listening_ports": "Listening Ports",
         "report.windows_services": "Windows Services",
@@ -99,12 +106,14 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "report.return_code": "Return code",
         "report.stdout": "stdout",
         "report.stderr": "stderr",
+        "table.area": "Area",
+        "table.status": "Status",
+        "table.detail": "Detail",
         "table.field": "Field",
         "table.value": "Value",
         "table.pid": "PID",
         "table.name": "Name",
         "table.user": "User",
-        "table.status": "Status",
         "table.cpu_percent": "CPU %",
         "table.memory_percent": "Memory %",
         "table.rss_memory": "RSS Memory",
@@ -127,6 +136,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "table.process": "Process",
         "table.service_name": "Service Name",
         "table.display_name": "Display Name",
+        "table.start_type": "Start Type",
     },
     "es": {
         "app.title": "Recolector de Evidencia IT",
@@ -162,6 +172,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "progress.processes": "Recolectando información de procesos...",
         "progress.network": "Recolectando información de red...",
         "progress.services": "Recolectando información de servicios de Windows...",
+        "progress.analyzing": "Analizando evidencia recolectada...",
         "progress.finalizing": "Finalizando recolección de evidencia...",
         "metadata.purpose": "Recolección de evidencia defensiva para soporte IT y diagnóstico",
         "metadata.safety_note": (
@@ -173,6 +184,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "warning.processes_failed": "Falló la recolección de procesos",
         "warning.network_failed": "Falló la recolección de red",
         "warning.services_failed": "Falló la recolección de servicios",
+        "warning.analysis_failed": "Falló el análisis de evidencia",
         "report.title": "Reporte de Evidencia IT",
         "report.purpose": "Propósito",
         "report.purpose_text": (
@@ -183,6 +195,10 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "report.not_replacement": (
             "Esta herramienta no reemplaza un EDR, SIEM, antivirus ni un proceso forense formal."
         ),
+        "report.quick_status": "Estado rápido del equipo",
+        "report.overall_status": "Estado general",
+        "report.key_findings": "Hallazgos principales",
+        "report.no_findings": "No se detectaron problemas inmediatos con los chequeos básicos.",
         "report.collection_summary": "Resumen de recolección",
         "report.resource_usage": "Uso de recursos",
         "report.cpu": "CPU",
@@ -194,6 +210,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "report.top_by_cpu": "Procesos con mayor uso de CPU",
         "report.process_errors": "Errores de recolección de procesos",
         "report.no_process_errors": "No se reportaron errores de recolección de procesos.",
+        "report.network_summary": "Resumen de red",
         "report.network_interfaces": "Interfaces de red",
         "report.listening_ports": "Puertos en escucha",
         "report.windows_services": "Servicios de Windows",
@@ -216,12 +233,14 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "report.return_code": "Código de retorno",
         "report.stdout": "stdout",
         "report.stderr": "stderr",
+        "table.area": "Área",
+        "table.status": "Estado",
+        "table.detail": "Detalle",
         "table.field": "Campo",
         "table.value": "Valor",
         "table.pid": "PID",
         "table.name": "Nombre",
         "table.user": "Usuario",
-        "table.status": "Estado",
         "table.cpu_percent": "CPU %",
         "table.memory_percent": "Memoria %",
         "table.rss_memory": "Memoria RSS",
@@ -244,6 +263,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "table.process": "Proceso",
         "table.service_name": "Nombre del servicio",
         "table.display_name": "Nombre visible",
+        "table.start_type": "Tipo de inicio",
     },
 }
 

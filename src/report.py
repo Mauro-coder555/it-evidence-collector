@@ -23,6 +23,22 @@ def _safe_value(value: Any) -> str:
     return text
 
 
+def _status_badge(status: Any) -> str:
+    """Format a status value for Markdown."""
+    normalized = str(status).lower().strip()
+
+    if normalized == "ok":
+        return "OK"
+    if normalized == "review":
+        return "REVIEW"
+    if normalized == "warning":
+        return "WARNING"
+    if normalized == "error":
+        return "ERROR"
+
+    return _safe_value(status)
+
+
 def _render_key_value_table(data: dict[str, Any], language: str) -> str:
     """Render a dictionary as a Markdown key-value table."""
     lines = [
@@ -34,6 +50,38 @@ def _render_key_value_table(data: dict[str, Any], language: str) -> str:
         lines.append(f"| `{key}` | {_safe_value(value)} |")
 
     return "\n".join(lines)
+
+
+def _render_quick_status(analysis: dict[str, Any], language: str) -> str:
+    """Render the quick computer status section."""
+    checks = analysis.get("checks", [])
+
+    lines = [
+        f"{t(language, 'report.overall_status')}: **{_status_badge(analysis.get('overall_status', 'ok'))}**",
+        "",
+        f"| {t(language, 'table.area')} | {t(language, 'table.status')} | {t(language, 'table.detail')} |",
+        "|---|---|---|",
+    ]
+
+    for check in checks:
+        lines.append(
+            "| "
+            f"{_safe_value(check.get('area'))} | "
+            f"{_status_badge(check.get('status'))} | "
+            f"{_safe_value(check.get('detail'))} |"
+        )
+
+    return "\n".join(lines)
+
+
+def _render_key_findings(analysis: dict[str, Any], language: str) -> str:
+    """Render key findings."""
+    findings = analysis.get("findings", [])
+
+    if not findings:
+        return t(language, "report.no_findings")
+
+    return "\n".join([f"- {_safe_value(finding)}" for finding in findings])
 
 
 def _render_process_table(processes: list[dict[str, Any]], language: str) -> str:
@@ -208,6 +256,7 @@ def _render_services(data: dict[str, Any], language: str) -> str:
 
     services = data.get("services", [])
     summary = data.get("summary", {})
+    error = data.get("error", "")
 
     lines = [
         (
@@ -215,13 +264,26 @@ def _render_services(data: dict[str, Any], language: str) -> str:
             f"**{_safe_value(data.get('total_services'))}**"
         ),
         "",
-        f"### {t(language, 'report.service_state_summary')}",
-        "",
-        _render_key_value_table(summary, language),
-        "",
-        f"### {t(language, 'report.service_sample')}",
-        "",
     ]
+
+    if error:
+        lines.extend(
+            [
+                f"{t(language, 'table.error')}: **{_safe_value(error)}**",
+                "",
+            ]
+        )
+
+    lines.extend(
+        [
+            f"### {t(language, 'report.service_state_summary')}",
+            "",
+            _render_key_value_table(summary, language),
+            "",
+            f"### {t(language, 'report.service_sample')}",
+            "",
+        ]
+    )
 
     if not services:
         lines.append(t(language, "report.no_service_data"))
@@ -232,9 +294,10 @@ def _render_services(data: dict[str, Any], language: str) -> str:
             (
                 f"| {t(language, 'table.service_name')} "
                 f"| {t(language, 'table.display_name')} "
-                f"| {t(language, 'table.status')} |"
+                f"| {t(language, 'table.status')} "
+                f"| {t(language, 'table.start_type')} |"
             ),
-            "|---|---|---|",
+            "|---|---|---|---|",
         ]
     )
 
@@ -243,7 +306,8 @@ def _render_services(data: dict[str, Any], language: str) -> str:
             "| "
             f"{_safe_value(service.get('service_name'))} | "
             f"{_safe_value(service.get('display_name'))} | "
-            f"{_safe_value(service.get('state'))} |"
+            f"{_safe_value(service.get('status'))} | "
+            f"{_safe_value(service.get('start_type'))} |"
         )
 
     return "\n".join(lines)
@@ -288,9 +352,18 @@ def generate_markdown_report(evidence: dict[str, Any], language: str = "en") -> 
     processes = evidence.get("processes", {})
     network = evidence.get("network", {})
     services = evidence.get("services", {})
+    analysis = evidence.get("analysis", {})
 
     content = [
         f"# {t(language_code, 'report.title')}",
+        "",
+        f"## {t(language_code, 'report.quick_status')}",
+        "",
+        _render_quick_status(analysis, language_code),
+        "",
+        f"## {t(language_code, 'report.key_findings')}",
+        "",
+        _render_key_findings(analysis, language_code),
         "",
         f"## {t(language_code, 'report.purpose')}",
         "",

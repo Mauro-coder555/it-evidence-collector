@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import time
 from datetime import datetime
 from typing import Any
 
@@ -33,7 +34,7 @@ def _format_bytes(value: int | float | None) -> str:
 
 def _format_process_time(timestamp: float | None) -> str:
     """Format a process creation timestamp."""
-    if timestamp is None:
+    if timestamp is None or timestamp <= 0:
         return "not available"
 
     try:
@@ -42,10 +43,22 @@ def _format_process_time(timestamp: float | None) -> str:
         return "not available"
 
 
+def _prime_cpu_measurement() -> None:
+    """Prime process CPU measurement so later readings are meaningful."""
+    for process in psutil.process_iter():
+        try:
+            process.cpu_percent(interval=None)
+        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+            continue
+
+
 def collect_processes(limit: int = 25) -> dict[str, Any]:
     """Collect active processes and top resource consumers."""
     processes: list[dict[str, Any]] = []
     errors: list[str] = []
+
+    _prime_cpu_measurement()
+    time.sleep(1)
 
     for process in psutil.process_iter(
         attrs=[
@@ -56,12 +69,12 @@ def collect_processes(limit: int = 25) -> dict[str, Any]:
             "create_time",
             "memory_info",
             "memory_percent",
-            "cpu_percent",
         ]
     ):
         try:
             info = process.info
             memory_info = info.get("memory_info")
+            cpu_percent = process.cpu_percent(interval=None)
 
             processes.append(
                 {
@@ -70,7 +83,7 @@ def collect_processes(limit: int = 25) -> dict[str, Any]:
                     "username": _safe_process_value(info.get("username")),
                     "status": _safe_process_value(info.get("status")),
                     "created_at": _format_process_time(info.get("create_time")),
-                    "cpu_percent": round(float(info.get("cpu_percent") or 0), 2),
+                    "cpu_percent": round(float(cpu_percent or 0), 2),
                     "memory_percent": round(float(info.get("memory_percent") or 0), 2),
                     "rss_memory": _format_bytes(memory_info.rss if memory_info else None),
                     "rss_memory_bytes": memory_info.rss if memory_info else 0,
@@ -95,6 +108,8 @@ def collect_processes(limit: int = 25) -> dict[str, Any]:
         reverse=True,
     )[:limit]
 
+    all_processes_sample = processes[:limit]
+
     for item in processes:
         item.pop("rss_memory_bytes", None)
 
@@ -104,10 +119,13 @@ def collect_processes(limit: int = 25) -> dict[str, Any]:
     for item in top_by_cpu:
         item.pop("rss_memory_bytes", None)
 
+    for item in all_processes_sample:
+        item.pop("rss_memory_bytes", None)
+
     return {
         "total_processes": len(processes),
         "top_by_memory": top_by_memory,
         "top_by_cpu": top_by_cpu,
-        "all_processes_sample": processes[:limit],
+        "all_processes_sample": all_processes_sample,
         "errors": errors,
     }
