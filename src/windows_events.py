@@ -9,6 +9,8 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
+from datetime import datetime
+
 
 def _run_powershell_json(command: str, timeout: int = 35) -> dict[str, Any]:
     """Run a safe read-only PowerShell command and return its output."""
@@ -80,7 +82,7 @@ def _parse_json_output(raw_json: str) -> list[dict[str, Any]]:
 def _normalize_event(event: dict[str, Any]) -> dict[str, Any]:
     """Normalize a Windows event dictionary."""
     return {
-        "time_created": event.get("TimeCreated", "not available"),
+        "time_created": _normalize_windows_date(event.get("TimeCreated")),
         "event_id": event.get("Id", "not available"),
         "provider": event.get("ProviderName", "not available"),
         "level": event.get("LevelDisplayName", "not available"),
@@ -277,3 +279,18 @@ def collect_windows_crash_diagnostics() -> dict[str, Any]:
         "minidumps": minidumps,
         "errors": errors,
     }
+
+def _normalize_windows_date(value: Any) -> str:
+    """Normalize PowerShell JSON date values."""
+    if value is None:
+        return "not available"
+
+    text = str(value)
+
+    match = re.search(r"/Date\((\d+)\)/", text)
+    if match:
+        timestamp_ms = int(match.group(1))
+        timestamp_seconds = timestamp_ms / 1000
+        return datetime.fromtimestamp(timestamp_seconds).isoformat(timespec="seconds")
+
+    return text

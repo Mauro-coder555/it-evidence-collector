@@ -10,6 +10,7 @@ from src.network import collect_network_info
 from src.processes import collect_processes
 from src.services import collect_services
 from src.system_info import collect_system_info
+from src.windows_events import collect_windows_crash_diagnostics
 
 ProgressCallback = Callable[[int, str], None]
 
@@ -42,28 +43,35 @@ def collect_evidence(
         evidence["system"] = {"error": str(exc)}
         evidence["warnings"].append(f"{t(language, 'warning.system_failed')}: {exc}")
 
-    _notify(progress_callback, 35, t(language, "progress.processes"))
+    _notify(progress_callback, 30, t(language, "progress.processes"))
     try:
         evidence["processes"] = collect_processes()
     except Exception as exc:
         evidence["processes"] = {"error": str(exc)}
         evidence["warnings"].append(f"{t(language, 'warning.processes_failed')}: {exc}")
 
-    _notify(progress_callback, 60, t(language, "progress.network"))
+    _notify(progress_callback, 50, t(language, "progress.network"))
     try:
         evidence["network"] = collect_network_info()
     except Exception as exc:
         evidence["network"] = {"error": str(exc)}
         evidence["warnings"].append(f"{t(language, 'warning.network_failed')}: {exc}")
 
-    _notify(progress_callback, 80, t(language, "progress.services"))
+    _notify(progress_callback, 68, t(language, "progress.services"))
     try:
         evidence["services"] = collect_services()
     except Exception as exc:
         evidence["services"] = {"error": str(exc)}
         evidence["warnings"].append(f"{t(language, 'warning.services_failed')}: {exc}")
 
-    _notify(progress_callback, 90, t(language, "progress.analyzing"))
+    _notify(progress_callback, 82, "Collecting Windows crash diagnostics...")
+    try:
+        evidence["crash_diagnostics"] = collect_windows_crash_diagnostics()
+    except Exception as exc:
+        evidence["crash_diagnostics"] = {"error": str(exc)}
+        evidence["warnings"].append(f"Windows crash diagnostics collection failed: {exc}")
+
+    _notify(progress_callback, 92, t(language, "progress.analyzing"))
     try:
         evidence["analysis"] = analyze_evidence(evidence)
     except Exception as exc:
@@ -71,9 +79,10 @@ def collect_evidence(
             "overall_status": "review",
             "checks": [],
             "findings": [f"{t(language, 'warning.analysis_failed')}: {exc}"],
+            "recommendations": [],
         }
         evidence["warnings"].append(f"{t(language, 'warning.analysis_failed')}: {exc}")
 
-    _notify(progress_callback, 95, t(language, "progress.finalizing"))
+    _notify(progress_callback, 97, t(language, "progress.finalizing"))
 
     return evidence
