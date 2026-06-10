@@ -1,17 +1,17 @@
 # IT Evidence Collector
 
 ![Python](https://img.shields.io/badge/Python-3.10%2B-blue)
-![UI](https://img.shields.io/badge/UI-Tkinter-green)
-![Platform](https://img.shields.io/badge/Platform-Windows-lightgrey)
-![Reports](https://img.shields.io/badge/Reports-Markdown-purple)
-![Purpose](https://img.shields.io/badge/Purpose-Defensive%20IT-orange)
-![Status](https://img.shields.io/badge/Status-MVP-yellow)
+![Tkinter](https://img.shields.io/badge/UI-Tkinter-green)
+![Windows](https://img.shields.io/badge/Platform-Windows-lightgrey)
+![Markdown](https://img.shields.io/badge/Reports-Markdown-purple)
+![Status](https://img.shields.io/badge/Status-MVP-orange)
+![Safety](https://img.shields.io/badge/Safety-Read%20Only-brightgreen)
 
-**IT Evidence Collector** es una aplicación de escritorio simple y local para Windows, pensada para equipos de soporte IT que necesitan recolectar evidencia básica de una computadora ante un incidente, comportamiento extraño o tarea de troubleshooting.
+**IT Evidence Collector** es una aplicación de escritorio local para Windows pensada para soporte técnico, troubleshooting e investigación inicial.
 
-La herramienta genera un reporte en Markdown con información útil del sistema, consumo de recursos, procesos, red, puertos abiertos y servicios de Windows.
+La herramienta recolecta información básica del equipo en modo solo lectura y genera un reporte Markdown con un resumen rápido, hallazgos principales y detalle técnico.
 
-> Esta herramienta no reemplaza un EDR, SIEM, antivirus ni un proceso forense formal. Es un MVP defensivo para diagnóstico inicial y soporte técnico.
+No es una herramienta forense avanzada. No reemplaza un EDR, SIEM, antivirus ni un proceso formal de análisis.
 
 ---
 
@@ -19,131 +19,202 @@ La herramienta genera un reporte en Markdown con información útil del sistema,
 
 - [Qué hace](#qué-hace)
 - [Para qué sirve](#para-qué-sirve)
-- [Características principales](#características-principales)
-- [Información recolectada](#información-recolectada)
-- [Seguridad y alcance](#seguridad-y-alcance)
+- [Información que recolecta](#información-que-recolecta)
+- [Diagnóstico de crashes de Windows](#diagnóstico-de-crashes-de-windows)
+- [Seguridad](#seguridad)
 - [Tecnologías utilizadas](#tecnologías-utilizadas)
-- [Estructura del proyecto](#estructura-del-proyecto)
 - [Instalación](#instalación)
-- [Ejecución](#ejecución)
-- [Uso de la aplicación](#uso-de-la-aplicación)
+- [Uso](#uso)
 - [Reportes generados](#reportes-generados)
-- [Limitaciones actuales](#limitaciones-actuales)
+- [Estructura del proyecto](#estructura-del-proyecto)
 - [Mejoras futuras](#mejoras-futuras)
-- [Empaquetado futuro como .exe](#empaquetado-futuro-como-exe)
-- [Comandos útiles de Git](#comandos-útiles-de-git)
 
 ---
 
 ## Qué hace
 
-IT Evidence Collector permite abrir una interfaz visual simple, seleccionar idioma, iniciar una recolección de evidencia y generar automáticamente un reporte local en la carpeta `reports/`.
+La app permite ejecutar una recolección local de evidencia del equipo y generar un reporte con información útil para soporte.
 
-El objetivo es ayudar a una persona de soporte IT a responder preguntas como:
+El reporte incluye un resumen inicial para ver rápido el estado general de la PC.
 
-- ¿La computadora está con poco espacio en disco?
-- ¿Hay consumo alto de memoria o CPU?
-- ¿Qué procesos están consumiendo más recursos?
-- ¿Qué IP tiene el equipo?
-- ¿Qué puertos están escuchando?
-- ¿Qué servicios de Windows están corriendo?
-- ¿Hay algo obvio para revisar rápidamente?
+Ejemplos de alertas que puede mostrar:
+
+- Memoria alta
+- Disco con poco espacio libre
+- Muchos procesos activos
+- Procesos con alto consumo de CPU o memoria
+- Servicios escuchando en puertos relevantes
+- PostgreSQL, SMB, RDP u otros puertos expuestos
+- Eventos recientes de crash o BugCheck en Windows
+- Reinicios inesperados registrados por Kernel-Power
 
 ---
 
 ## Para qué sirve
 
-Este proyecto sirve para:
+Sirve como una primera revisión técnica antes de escalar un caso.
 
-- Troubleshooting inicial.
-- Soporte técnico interno.
-- Diagnóstico rápido de una PC Windows.
-- Recolección básica de evidencia ante incidentes.
-- Documentar el estado de una computadora en un momento específico.
-- Compartir un reporte simple con otro miembro del equipo de IT.
+Casos de uso posibles:
 
----
-
-## Características principales
-
-- Interfaz gráfica simple con Tkinter.
-- Recolección local, sin enviar información a servidores externos.
-- Reportes en Markdown.
-- Soporte bilingüe para UI y reportes: inglés y español.
-- Barra de progreso durante la recolección.
-- Botón para abrir la carpeta de reportes.
-- Resumen rápido del estado del equipo.
-- Hallazgos principales al inicio del reporte.
-- Recolección defensiva y de solo lectura.
-- Pensada inicialmente para Windows.
-- MVP chico, modular y mantenible.
+- Soporte IT remoto
+- Troubleshooting de equipos lentos
+- Revisión inicial después de pantallazos azules o reinicios
+- Diagnóstico básico de red y servicios
+- Evidencia inicial para adjuntar a un ticket
+- Comparar el estado de una PC antes y después de una intervención
 
 ---
 
-## Información recolectada
+## Información que recolecta
 
-La herramienta puede recolectar:
+La herramienta recolecta:
 
-- Sistema operativo.
-- Versión de Windows.
-- Arquitectura.
-- Hostname.
-- Usuario actual.
-- Fecha y hora de recolección.
-- Uptime.
-- Uso de CPU.
-- Uso de RAM.
-- Uso de disco.
-- Procesos activos.
-- Procesos con mayor consumo de memoria.
-- Procesos con mayor consumo de CPU.
-- Interfaces de red.
-- IP local.
-- Puertos TCP en escucha.
-- Servicios de Windows.
-- Estado y tipo de inicio de servicios.
-- Salidas de comandos seguros como:
-  - `ipconfig /all`
-  - `route print`
-  - `netstat -ano`
+- Sistema operativo
+- Hostname
+- Usuario actual
+- Fecha y hora de recolección
+- Uptime
+- CPU
+- Memoria RAM
+- Uso de disco
+- Procesos activos
+- Procesos con mayor uso de memoria
+- Procesos con mayor uso de CPU
+- Interfaces de red
+- IP local
+- Puertos TCP en escucha
+- Servicios de Windows
+- Salida de comandos seguros como `ipconfig /all`, `route print` y `netstat -ano`
+- Eventos de crash de Windows
+- Eventos BugCheck
+- Eventos Kernel-Power
+- Eventos WHEA
+- Eventos Display
+- Archivos minidump si existen
 
 ---
 
-## Seguridad y alcance
+## Diagnóstico de crashes de Windows
 
-Esta herramienta está diseñada para uso defensivo, soporte técnico y diagnóstico interno.
+La app incluye una sección para detectar señales relacionadas con pantallazos azules, reinicios inesperados y errores de sistema.
+
+Busca información como:
+
+- BugCheck events
+- Kernel-Power events
+- WHEA hardware events
+- Display driver events
+- Critical and error events recientes
+- Archivos `.dmp` en `C:\Windows\Minidump`
+
+Esto ayuda a detectar casos como:
+
+- `DRIVER_IRQL_NOT_LESS_OR_EQUAL`
+- `IRQL_NOT_LESS_OR_EQUAL`
+- reinicios inesperados
+- errores de driver
+- posibles errores de hardware
+
+La herramienta no analiza archivos dump en profundidad. Solo detecta su existencia y resume eventos relevantes.
+
+---
+
+## Seguridad
+
+La herramienta es de solo lectura.
 
 No realiza acciones destructivas.
 
 No hace lo siguiente:
 
-- No borra archivos.
-- No mata procesos.
-- No modifica servicios.
-- No cambia configuraciones del sistema.
-- No instala persistencia.
-- No ejecuta acciones ocultas.
-- No recolecta contraseñas.
-- No recolecta tokens.
-- No recolecta cookies.
-- No recolecta claves privadas.
-- No intenta evadir controles de seguridad.
-
-Si algún dato no puede recolectarse por permisos, el reporte debería mostrarlo como `not available`, `access denied` o indicar que requiere permisos de administrador.
+- No borra archivos
+- No mata procesos
+- No modifica servicios
+- No cambia configuraciones del sistema
+- No instala persistencia
+- No recolecta contraseñas
+- No recolecta tokens
+- No recolecta cookies
+- No recolecta claves privadas
 
 ---
 
 ## Tecnologías utilizadas
 
-| Herramienta | Uso |
-|---|---|
-| Python | Lenguaje principal del proyecto. |
-| Tkinter | Interfaz gráfica local. |
-| psutil | Recolección de CPU, memoria, disco, procesos y red. |
-| subprocess | Ejecución de comandos seguros de Windows en modo lectura. |
-| PowerShell | Recolección estructurada de servicios de Windows. |
-| Markdown | Formato del reporte generado. |
-| PyInstaller | Opción futura para empaquetar como `.exe`. |
+- **Python** para la lógica principal
+- **Tkinter** para la interfaz gráfica
+- **psutil** para métricas del sistema, procesos y red
+- **PowerShell** para servicios y eventos de Windows
+- **Markdown** para generar reportes simples y portables
+
+---
+
+## Instalación
+
+Desde la raíz del proyecto:
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+Si PowerShell bloquea la activación del entorno virtual:
+
+```powershell
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
+.\.venv\Scripts\Activate.ps1
+```
+
+---
+
+## Uso
+
+Con el entorno virtual activo:
+
+```powershell
+python main.py
+```
+
+Luego:
+
+1. Seleccionar idioma
+2. Ejecutar la recolección
+3. Esperar a que finalice
+4. Abrir la carpeta de reportes desde la app
+5. Revisar el archivo Markdown generado
+
+---
+
+## Reportes generados
+
+Los reportes se guardan dentro de la carpeta:
+
+```text
+reports/
+```
+
+Ejemplos:
+
+```text
+reports/evidence-report-en-YYYYMMDD-HHMMSS.md
+reports/evidence-report-es-YYYYMMDD-HHMMSS.md
+```
+
+El reporte incluye:
+
+- Estado rápido del equipo
+- Hallazgos principales
+- Próximos pasos sugeridos
+- Diagnóstico de crashes de Windows
+- Información del sistema
+- Recursos
+- Procesos
+- Red
+- Servicios
+- Salidas de comandos seguros
+- Advertencias de recolección
 
 ---
 
@@ -164,199 +235,37 @@ it-evidence-collector/
     ├── __init__.py
     ├── analysis.py
     ├── collectors.py
-    ├── system_info.py
-    ├── processes.py
-    ├── network.py
-    ├── services.py
-    ├── report.py
     ├── i18n.py
-    └── ui.py
+    ├── network.py
+    ├── processes.py
+    ├── report.py
+    ├── services.py
+    ├── system_info.py
+    ├── ui.py
+    └── windows_events.py
 ```
-
-### Descripción rápida de módulos
-
-| Archivo | Responsabilidad |
-|---|---|
-| `main.py` | Punto de entrada de la aplicación. |
-| `src/ui.py` | Interfaz gráfica con Tkinter. |
-| `src/collectors.py` | Orquesta la recolección de evidencia. |
-| `src/system_info.py` | Información básica del sistema y recursos. |
-| `src/processes.py` | Procesos activos y consumo de CPU/RAM. |
-| `src/network.py` | Interfaces de red, puertos y comandos de red. |
-| `src/services.py` | Servicios de Windows usando PowerShell. |
-| `src/analysis.py` | Genera resumen rápido y hallazgos principales. |
-| `src/report.py` | Genera el reporte Markdown. |
-| `src/i18n.py` | Traducciones para UI y reportes. |
-
----
-
-## Instalación
-
-Desde la raíz del proyecto, crear un entorno virtual:
-
-```powershell
-python -m venv .venv
-```
-
-Activar el entorno virtual:
-
-```powershell
-.\.venv\Scripts\Activate.ps1
-```
-
-Si PowerShell bloquea la activación, ejecutar:
-
-```powershell
-Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
-.\.venv\Scripts\Activate.ps1
-```
-
-Actualizar `pip`:
-
-```powershell
-python -m pip install --upgrade pip
-```
-
-Instalar dependencias:
-
-```powershell
-pip install -r requirements.txt
-```
-
----
-
-## Ejecución
-
-Con el entorno virtual activo:
-
-```powershell
-python main.py
-```
-
-Esto abrirá la interfaz gráfica de la aplicación.
-
----
-
-## Uso de la aplicación
-
-1. Abrir la app con `python main.py`.
-2. Seleccionar idioma: English o Español.
-3. Presionar el botón de recolección.
-4. Esperar a que finalice la barra de progreso.
-5. Revisar el mensaje de reporte generado.
-6. Abrir la carpeta `reports/` desde la app si se desea.
-
----
-
-## Reportes generados
-
-Los reportes se guardan dentro de:
-
-```text
-reports/
-```
-
-Ejemplos de nombres:
-
-```text
-reports/evidence-report-es-20260609-211305.md
-reports/evidence-report-en-20260609-211305.md
-```
-
-El reporte incluye secciones como:
-
-- Estado rápido del equipo.
-- Hallazgos principales.
-- Propósito y nota de seguridad.
-- Información general del sistema.
-- Uso de CPU, memoria y disco.
-- Procesos con mayor consumo.
-- Interfaces de red.
-- Puertos en escucha.
-- Servicios de Windows.
-- Salidas crudas de comandos seguros.
-- Advertencias de recolección.
-
----
-
-## Limitaciones actuales
-
-- Está pensado inicialmente para Windows.
-- No es una herramienta forense avanzada.
-- No reemplaza herramientas de monitoreo o seguridad corporativa.
-- Algunos datos pueden requerir permisos elevados.
-- Las salidas crudas de comandos de Windows pueden mostrar caracteres con encoding imperfecto según la configuración regional del sistema.
-- El análisis automático usa reglas simples y conservadoras.
 
 ---
 
 ## Mejoras futuras
 
-Ideas para futuras versiones:
+Ideas para próximas versiones:
 
-- Agregar sección de próximos pasos sugeridos.
-- Exportar también en HTML.
-- Corregir decoding de salidas crudas de comandos Windows.
-- Agregar recolección básica de Windows Event Logs.
-- Agregar estado de Microsoft Defender.
-- Agregar estado de BitLocker.
-- Agregar listado resumido de programas instalados.
-- Agregar hash del reporte generado.
-- Permitir configurar qué módulos recolectar.
-- Agregar modo CLI sin interfaz gráfica.
-- Mejorar traducciones de hallazgos automáticos.
-- Empaquetar como `.exe` con PyInstaller.
-
----
-
-## Empaquetado futuro como .exe
-
-Más adelante se puede empaquetar la aplicación con PyInstaller.
-
-Instalar PyInstaller:
-
-```powershell
-pip install pyinstaller
-```
-
-Generar ejecutable:
-
-```powershell
-pyinstaller --onefile --windowed --name it-evidence-collector main.py
-```
-
-El ejecutable quedará en:
-
-```text
-dist/
-```
-
-Recomendación: validar primero el MVP ejecutándolo con Python antes de empaquetarlo.
+- Corregir encoding de comandos clásicos de Windows
+- Buscar también `C:\Windows\MEMORY.DMP`
+- Buscar dumps en `C:\Windows\LiveKernelReports`
+- Marcar el proceso propio de la herramienta para que no aparezca como falso top CPU
+- Agregar estado de Windows Defender
+- Agregar estado de BitLocker
+- Agregar últimos errores del Event Viewer por categoría
+- Exportar también en HTML
+- Agregar botón para copiar resumen ejecutivo
+- Empaquetar como `.exe` con PyInstaller
+- Agregar firma o hash del reporte generado
 
 ---
 
-## Comandos útiles de Git
+## Estado del proyecto
 
-Ver cambios:
+MVP funcional para diagnóstico inicial de soporte IT en Windows.
 
-```bash
-git status
-```
-
-Agregar archivos:
-
-```bash
-git add .
-```
-
-Crear commit:
-
-```bash
-git commit -m "Update project documentation"
-```
-
-Commit sugerido para este README:
-
-```bash
-git commit -m "Add simple project README"
-```
