@@ -103,7 +103,14 @@ def collect_services(limit: int = 150) -> dict[str, Any]:
 
     powershell_command = (
         "Get-Service | "
-        "Select-Object Name,DisplayName,Status,StartType | "
+        "ForEach-Object { "
+        "[PSCustomObject]@{ "
+        "Name = $_.Name; "
+        "DisplayName = $_.DisplayName; "
+        "Status = $_.Status.ToString(); "
+        "StartType = $_.StartType.ToString() "
+        "} "
+        "} | "
         "ConvertTo-Json -Depth 2"
     )
 

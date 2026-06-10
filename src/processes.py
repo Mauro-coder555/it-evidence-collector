@@ -9,6 +9,12 @@ from typing import Any
 import psutil
 
 
+EXCLUDED_CPU_PROCESS_NAMES = {
+    "system idle process",
+    "idle",
+}
+
+
 def _safe_process_value(value: Any) -> Any:
     """Return a normalized process value."""
     if value is None:
@@ -50,6 +56,20 @@ def _prime_cpu_measurement() -> None:
             process.cpu_percent(interval=None)
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
             continue
+
+
+def _is_excluded_from_cpu_ranking(process_data: dict[str, Any]) -> bool:
+    """Return whether a process should be excluded from CPU ranking."""
+    pid = process_data.get("pid")
+    name = str(process_data.get("name", "")).strip().lower()
+
+    if pid == 0:
+        return True
+
+    if name in EXCLUDED_CPU_PROCESS_NAMES:
+        return True
+
+    return False
 
 
 def collect_processes(limit: int = 25) -> dict[str, Any]:
@@ -102,8 +122,14 @@ def collect_processes(limit: int = 25) -> dict[str, Any]:
         reverse=True,
     )[:limit]
 
+    cpu_ranking_candidates = [
+        process_data
+        for process_data in processes
+        if not _is_excluded_from_cpu_ranking(process_data)
+    ]
+
     top_by_cpu = sorted(
-        processes,
+        cpu_ranking_candidates,
         key=lambda item: item.get("cpu_percent", 0),
         reverse=True,
     )[:limit]
